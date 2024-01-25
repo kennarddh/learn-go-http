@@ -6,7 +6,7 @@ services:
         networks:
             - app
         environment:
-            DATABASE_URL: mysql://root:root@database:3306/go_http
+            DATABASE_URL: root:root@tcp(database:3306)/go_http
         depends_on:
             database:
                 condition: service_healthy
@@ -17,7 +17,7 @@ services:
         image: mariadb:lts
         environment:
             MYSQL_ROOT_PASSWORD: root
-            MYSQL_DATABASE: distro_deploy
+            MYSQL_DATABASE: go_http
         volumes:
             - go_http_database:/var/lib/mysql
         healthcheck:
