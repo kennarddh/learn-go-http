@@ -37,11 +37,20 @@ var argon2Params = &hash.Argon2Params{
 func register(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("got /register request\n")
 
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		io.WriteString(w, "{\"success\": false, \"message\": \"Only Post Method Is Allowed\"}")
+
+		return
+	}
+
 	if r.Body != nil {
 		defer r.Body.Close()
 	}
 
 	body, readErr := io.ReadAll(r.Body)
+
+	w.Header().Set("Content-Type", "application/json")
 
 	if readErr != nil {
 		fmt.Println("Read Body Error")
@@ -50,6 +59,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		io.WriteString(w, "{\"success\": false, \"message\": \"Internal Server Error\"}")
 
+		return
 	}
 
 	userReqBody := UserReqBody{}
@@ -62,6 +72,22 @@ func register(w http.ResponseWriter, r *http.Request) {
 
 		w.WriteHeader(http.StatusBadRequest)
 		io.WriteString(w, "{\"success\": false, \"message\": \"Invalid Body\"}")
+
+		return
+	}
+
+	if userReqBody.Username == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		io.WriteString(w, "{\"success\": false, \"message\": \"Username Cannot Be Empty\"}")
+
+		return
+	}
+
+	if userReqBody.Password == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		io.WriteString(w, "{\"success\": false, \"message\": \"Password Cannot Be Empty\"}")
+
+		return
 	}
 
 	hashedPassword, hashErr := hash.HashArgon2(userReqBody.Password, argon2Params)
@@ -72,6 +98,8 @@ func register(w http.ResponseWriter, r *http.Request) {
 
 		w.WriteHeader(http.StatusInternalServerError)
 		io.WriteString(w, "{\"success\": false, \"message\": \"Internal Server Error\"}")
+
+		return
 	}
 
 	// Create
