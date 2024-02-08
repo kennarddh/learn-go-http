@@ -37,6 +37,8 @@ var argon2Params = &hash.Argon2Params{
 func register(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("got /register request\n")
 
+	w.Header().Set("Content-Type", "application/json")
+	
 	if r.Method != "POST" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		io.WriteString(w, "{\"success\": false, \"message\": \"Only Post Method Is Allowed\"}")
@@ -49,8 +51,6 @@ func register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	body, readErr := io.ReadAll(r.Body)
-
-	w.Header().Set("Content-Type", "application/json")
 
 	if readErr != nil {
 		fmt.Println("Read Body Error")
