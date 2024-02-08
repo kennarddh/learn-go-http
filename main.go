@@ -6,6 +6,9 @@ import (
 	"net/http"
 	"os"
 
+	"encoding/json"
+
+	"example.com/main/hash"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -16,19 +19,69 @@ type User struct {
 	Password string
 }
 
-var db *gorm.DB
-
-func getRoot(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("got / request\n")
-	io.WriteString(w, "This is my website!\n")
+type UserReqBody struct {
+	Username string
+	Password string
 }
 
-func getHello(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("got /hello request\n")
-	io.WriteString(w, "Hello, HTTP test2!\n")
+var db *gorm.DB
+
+var argon2Params = &hash.Argon2Params{
+	Memory:      16 * 1024,
+	Iterations:  3,
+	Parallelism: 2,
+	SaltLength:  64,
+	KeyLength:   64,
+}
+
+func register(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("got /register request\n")
+
+	if r.Body != nil {
+		defer r.Body.Close()
+	}
+
+	body, readErr := io.ReadAll(r.Body)
+
+	if readErr != nil {
+		fmt.Println("Read Body Error")
+		fmt.Println(readErr)
+
+		w.WriteHeader(http.StatusInternalServerError)
+		io.WriteString(w, "{\"success\": false, \"message\": \"Internal Server Error\"}")
+
+	}
+
+	userReqBody := UserReqBody{}
+
+	jsonErr := json.Unmarshal(body, &userReqBody)
+
+	if jsonErr != nil {
+		fmt.Println("JSON Parse Error")
+		fmt.Println(jsonErr)
+
+		w.WriteHeader(http.StatusBadRequest)
+		io.WriteString(w, "{\"success\": false, \"message\": \"Invalid Body\"}")
+	}
+
+	hashedPassword, hashErr := hash.HashArgon2(userReqBody.Password, argon2Params)
+
+	if hashErr != nil {
+		fmt.Println("Hashing Error")
+		fmt.Println(hashErr)
+
+		w.WriteHeader(http.StatusInternalServerError)
+		io.WriteString(w, "{\"success\": false, \"message\": \"Internal Server Error\"}")
+	}
 
 	// Create
-	db.Create(&User{Username: "test", Password: "testpass"})
+	db.Create(&User{
+		Username: userReqBody.Username,
+		Password: string(hashedPassword),
+	})
+
+	w.WriteHeader(http.StatusOK)
+	io.WriteString(w, "{\"success\": true, \"message\": \"Success Register\"}")
 }
 
 func main() {
@@ -45,8 +98,7 @@ func main() {
 	// Migrate the schema
 	db.AutoMigrate(&User{})
 
-	http.HandleFunc("/", getRoot)
-	http.HandleFunc("/hello", getHello)
+	http.HandleFunc("/register", register)
 
 	errHttp := http.ListenAndServe(":3333", nil)
 
