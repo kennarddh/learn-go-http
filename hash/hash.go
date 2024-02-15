@@ -69,8 +69,7 @@ func GenerateRandomBytes(n uint32) ([]byte, error) {
 
 func decodeHash(encodedHash string) (p *Argon2Params, salt, hash []byte, err error) {
 	vals := strings.Split(encodedHash, "$")
-	fmt.Println(encodedHash)
-	fmt.Println(vals, len(vals))
+	
 	if len(vals) != 6 {
 		return nil, nil, nil, ErrInvalidHash
 	}

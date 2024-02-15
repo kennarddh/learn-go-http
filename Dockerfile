@@ -12,6 +12,7 @@ RUN --mount=type=cache,target="/root/.cache/go-build" CGO_ENABLED=0 GOOS=linux g
 FROM scratch
 
 COPY --from=builder /app/main /app/main
+COPY --from=builder /app/.env /app/.env
 
 EXPOSE 3333
 
