@@ -104,6 +104,26 @@ func register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var checkUser User
+	dbErr := db.Where(&User{Username: userReqBody.Username}).First(&checkUser).Error
+
+	if dbErr == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		io.WriteString(w, "{\"success\": false, \"message\": \"Username already used\"}")
+
+		return
+	}
+
+	if !errors.Is(dbErr, gorm.ErrRecordNotFound) {
+		fmt.Println("Gorm Error")
+		fmt.Println(dbErr)
+
+		w.WriteHeader(http.StatusInternalServerError)
+		io.WriteString(w, "{\"success\": false, \"message\": \"Internal Server Error\"}")
+
+		return
+	}
+
 	hashedPassword, hashErr := hash.HashArgon2(userReqBody.Password, argon2Params)
 
 	if hashErr != nil {
