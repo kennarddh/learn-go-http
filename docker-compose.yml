@@ -6,7 +6,7 @@ services:
         networks:
             - app
         environment:
-            DATABASE_URL: root:root@tcp(database:3306)/go_http
+            DATABASE_URL: root:root@tcp(database:3306)/go_http?parseTime=true
         depends_on:
             database:
                 condition: service_healthy

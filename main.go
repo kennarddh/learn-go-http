@@ -170,11 +170,19 @@ func login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var user User
-	dbErr := db.First(&user, "Username = ?", userReqBody.Username).Error
+	dbErr := db.Where(&User{Username: userReqBody.Username}).First(&user).Error
 
 	if errors.Is(dbErr, gorm.ErrRecordNotFound) {
 		w.WriteHeader(http.StatusBadRequest)
 		io.WriteString(w, "{\"success\": false, \"message\": \"Can't Find User\"}")
+
+		return
+	} else if dbErr != nil {
+		fmt.Println("Gorm Error")
+		fmt.Println(dbErr)
+
+		w.WriteHeader(http.StatusInternalServerError)
+		io.WriteString(w, "{\"success\": false, \"message\": \"Internal Server Error\"}")
 
 		return
 	}
